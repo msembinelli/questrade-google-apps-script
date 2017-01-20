@@ -1,0 +1,3 @@
+[submodule "ssdb"]
+	path = ssdb
+	url = git@github.com:msembinelli/ssdb-google-apps-script.git
