@@ -27,9 +27,7 @@ Open the project:
 `clasp open`
 
 Navigate to script properties (File > Project Properties > Script Properties) and add the following key value pair:
-| Property      | Value                                    |
-| ------------- |:----------------------------------------:|
-| tokenUrl      | https://login.questrade.com/oauth2/token |
+tokenUrl https://login.questrade.com/oauth2/token
 
 Now attach the `run()` command to a button in google sheets or set the `run()` function to run when the sheet opens.
 
