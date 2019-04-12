@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <script>
+        function updateInfo(form) {
+            google.script.run.withSuccessHandler().saveNewToken(form.token.value);
+            google.script.host.close();
+        }
+    </script>
+</head>
+
+<body>
+    <form>
+        <input type="text" name="token" value="" />
+        <input type="button" value="OK" onclick="updateInfo(this.form)" />
+    </form>
+</body>
+
+</html>

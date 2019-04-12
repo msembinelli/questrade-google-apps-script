@@ -1,0 +1,5 @@
+{
+  "timeZone": "America/Edmonton",
+  "dependencies": {},
+  "exceptionLogging": "STACKDRIVER"
+}

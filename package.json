@@ -1,0 +1,21 @@
+{
+  "name": "questrade-google-apps-script",
+  "version": "0.0.2",
+  "description": "A google sheets script to tabluate questrade holdings and balances.",
+  "main": "index.js",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/google-apps-script": "0.0.32",
+    "typescript": "^3.1.6"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/msembinelli/questrade-google-apps-script.git"
+  },
+  "author": "Matthew Sembinelli",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/msembinelli/questrade-google-apps-script/issues"
+  },
+  "homepage": "https://github.com/msembinelli/questrade-google-apps-script#readme"
+}
