@@ -69,7 +69,7 @@ var QuestradeApiSession = function () {
         };
         for (var i = 0; i < this.accounts.length; i++) {
             var url = this.authData.api_server + 'v1/accounts/' + this.accounts[i]['number'] + '/positions';
-            writeJSONtoSheet(JSON.parse(UrlFetchApp.fetch(url, options).getContentText())['positions'], "Positions");
+            writeJSONtoSheet(JSON.parse(UrlFetchApp.fetch(url, options).getContentText())['positions'], "Positions", this.accounts[i]['number'], i);
         }
     }
 
@@ -80,17 +80,22 @@ var QuestradeApiSession = function () {
         };
         for (var i = 0; i < this.accounts.length; i++) {
             var url = this.authData.api_server + 'v1/accounts/' + this.accounts[i]['number'] + '/balances';
-            writeJSONtoSheet(JSON.parse(UrlFetchApp.fetch(url, options).getContentText())['combinedBalances'], "Balances");
+            writeJSONtoSheet(JSON.parse(UrlFetchApp.fetch(url, options).getContentText())['perCurrencyBalances'], "Balances", this.accounts[i]['number'], i);
         }
     }
 }
 
-function writeJSONtoSheet(json, sheetname) {
+function writeJSONtoSheet(json, sheetname, account, account_id) {
     var doc = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = doc.getSheetByName(sheetname);
     var keys = Object.keys(json).sort();
+
+    if (sheet == null) {
+        sheet = doc.insertSheet(sheetname);
+    }
+
     if (keys.length < 1) {
-        // Nothing to do, return
+        console.error("Nothing to do, return");
         return;
     }
 
@@ -114,7 +119,6 @@ function writeJSONtoSheet(json, sheetname) {
         header = newCols;
     }
 
-
     var rows = [];
 
     for (var i = 0; i < keys.length; i++) {
@@ -128,7 +132,15 @@ function writeJSONtoSheet(json, sheetname) {
     }
 
     // We want to erase everything below the headers so that we get new data
-    sheet.deleteRows(2, sheet.getLastRow() - 1);
+    if (!account_id) {
+        try {
+            sheet.deleteRows(2, sheet.getLastRow() - 1);
+        }
+        catch (e) {
+            console.log(e);
+        }
+    }
+    sheet.appendRow(["account", account]);
 
     if (rows.length > 0) {
         for (var j = 0; j < rows.length; j++) {
@@ -154,3 +166,12 @@ function run() {
         console.log(e);
     }
 };
+
+function onOpen(e) {
+    // Add a custom menu to the spreadsheet.
+    SpreadsheetApp.getUi() // Or DocumentApp, SlidesApp, or FormApp.
+        .createMenu('Questrade')
+        .addItem('Run', 'run')
+        .addToUi();
+}
+
