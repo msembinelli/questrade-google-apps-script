@@ -80,7 +80,7 @@ var QuestradeApiSession = function () {
         writeNamedRangesToSheet(sheetName, table);
     }
 
-    this.getBalances = function () {
+    this.getBalances = function (method) {
         const options: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
             'method': 'get',
             'headers': this.authHeader
@@ -89,10 +89,10 @@ var QuestradeApiSession = function () {
             rows: [],
             namedRanges: [],
         };
-        const sheetName = "Balances";
+        const sheetName = method;
         this.accounts.forEach(account => {
             var url = this.authData.api_server + 'v1/accounts/' + account.number + '/balances';
-            table = writeJsonToTable(JSON.parse(UrlFetchApp.fetch(url, options).getContentText())['perCurrencyBalances'], sheetName, table, account);
+            table = writeJsonToTable(JSON.parse(UrlFetchApp.fetch(url, options).getContentText())[method], sheetName, table, account);
         });
         writeTableToSheet(sheetName, table);
         writeNamedRangesToSheet(sheetName, table);
@@ -190,7 +190,8 @@ function writeNamedRangesToSheet(sheetName, table) {
 
 function getPositionsAndBalances(qt) {
     qt.getPositions();
-    qt.getBalances();
+    qt.getBalances('perCurrencyBalances');
+    qt.getBalances('combinedBalances');
     Logger.log("Wrote balances/positions!");
 }
 
