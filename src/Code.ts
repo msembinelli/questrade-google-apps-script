@@ -108,6 +108,10 @@ function writeJsonToTable(json, sheetName, table, account) {
     var doc = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = doc.getSheetByName(sheetName);
 
+    if (sheet == null) {
+        sheet = doc.insertSheet(sheetName);
+    }
+
     if (json === undefined || json.length == 0) {
         return table;
     }
@@ -151,11 +155,7 @@ function writeTableToSheet(sheetName, table) {
     var doc = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = doc.getSheetByName(sheetName);
 
-    if (sheet == null) {
-        sheet = doc.insertSheet(sheetName);
-    } else {
-        sheet.clear();
-    }
+    sheet.clear();
 
     let maxColumnLength = 0;
     table.rows.forEach(row => {
@@ -209,7 +209,7 @@ function onOpen(e) {
     // Add a custom menu to the spreadsheet.
     SpreadsheetApp.getUi() // Or DocumentApp, SlidesApp, or FormApp.
         .createMenu('Questrade')
-        .addItem('Run', 'run')
+        .addItem('Pull', 'run')
         .addToUi();
 }
 
