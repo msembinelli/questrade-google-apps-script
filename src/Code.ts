@@ -67,9 +67,10 @@ var QuestradeApiSession = function () {
             'method': 'get',
             'headers': this.authHeader
         };
+        var row = 1;
         for (var i = 0; i < this.accounts.length; i++) {
             var url = this.authData.api_server + 'v1/accounts/' + this.accounts[i]['number'] + '/positions';
-            writeJSONtoSheet(JSON.parse(UrlFetchApp.fetch(url, options).getContentText())['positions'], "Positions");
+            row = writeJSONtoSheet(JSON.parse(UrlFetchApp.fetch(url, options).getContentText())['positions'], "Positions", this.accounts[i], row);
         }
     }
 
@@ -78,45 +79,44 @@ var QuestradeApiSession = function () {
             'method': 'get',
             'headers': this.authHeader
         };
+        var row = 1;
         for (var i = 0; i < this.accounts.length; i++) {
             var url = this.authData.api_server + 'v1/accounts/' + this.accounts[i]['number'] + '/balances';
-            writeJSONtoSheet(JSON.parse(UrlFetchApp.fetch(url, options).getContentText())['combinedBalances'], "Balances");
+            row = writeJSONtoSheet(JSON.parse(UrlFetchApp.fetch(url, options).getContentText())['perCurrencyBalances'], "Balances", this.accounts[i], row);
         }
     }
 }
 
-function writeJSONtoSheet(json, sheetname) {
+function writeJSONtoSheet(json, sheetname, account, currentRow) {
     var doc = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = doc.getSheetByName(sheetname);
     var keys = Object.keys(json).sort();
+
+    if (sheet == null) {
+        sheet = doc.insertSheet(sheetname);
+    }
+
     if (keys.length < 1) {
-        // Nothing to do, return
+        console.error("Nothing to do, return");
         return;
     }
 
-    var last = sheet.getLastColumn();
+    var lastRow = sheet.getLastRow();
+    var lastCol = sheet.getLastColumn();
     var header = [];
-    if (last != 0) {
-        header = sheet.getRange(1, 1, 1, last).getValues()[0];
-    }
-    var newCols = [];
-
-    if (header.length == 0) {
-        for (var k = 0; k < keys.length; k++) {
-            var header_keys = Object.keys(json[keys[k]]);
-            for (var h = 0; h < header_keys.length; h++) {
-                if (newCols.indexOf(header_keys[h]) === -1 && header.indexOf(header_keys[h]) === -1) {
-                    newCols.push(header_keys[h]);
-                }
+    for (var k = 0; k < keys.length; k++) {
+        var header_keys = Object.keys(json[keys[k]]);
+        for (var h = 0; h < header_keys.length; h++) {
+            if (header.indexOf(header_keys[h]) === -1) {
+                header.push(header_keys[h]);
             }
         }
-        sheet.appendRow(newCols);
-        header = newCols;
+    }
+    if (currentRow == 1 && lastRow) {
+        sheet.getRange(1, 1, lastRow, lastCol).clear();
     }
 
-
     var rows = [];
-
     for (var i = 0; i < keys.length; i++) {
         var row = [];
         for (var h = 0; h < header.length; h++) {
@@ -126,16 +126,18 @@ function writeJSONtoSheet(json, sheetname) {
             rows.push(row);
         }
     }
-
-    // We want to erase everything below the headers so that we get new data
-    sheet.deleteRows(2, sheet.getLastRow() - 1);
-
+    sheet.getRange(currentRow, 1, 1, 2).setValues([[account['type'], account['number']]]);
+    currentRow++;
+    sheet.getRange(currentRow, 1, 1, header.length).setValues([header]);
+    currentRow++;
     if (rows.length > 0) {
-        for (var j = 0; j < rows.length; j++) {
-            sheet.appendRow(rows[j]);
-        }
+        var range = sheet.getRange(currentRow, 1, keys.length, header.length);
+        range.setValues(rows);
+        doc.setNamedRange(account['type'] + "_" + account['number'] + "_" + sheetname, range);
     }
-
+    currentRow += keys.length;
+    currentRow++;
+    return currentRow;
 }
 
 function getPositionsAndBalances(qt) {
@@ -154,3 +156,12 @@ function run() {
         console.log(e);
     }
 };
+
+function onOpen(e) {
+    // Add a custom menu to the spreadsheet.
+    SpreadsheetApp.getUi() // Or DocumentApp, SlidesApp, or FormApp.
+        .createMenu('Questrade')
+        .addItem('Run', 'run')
+        .addToUi();
+}
+
