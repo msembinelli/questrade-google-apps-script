@@ -98,7 +98,7 @@ function writeJSONtoSheet(json, sheetname, account, currentRow) {
 
     if (keys.length < 1) {
         console.error("Nothing to do, return");
-        return;
+        return currentRow;
     }
 
     var lastRow = sheet.getLastRow();
