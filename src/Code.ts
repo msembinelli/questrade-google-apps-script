@@ -60,18 +60,24 @@ var QuestradeApiSession = function () {
     };
     var url = this.authData.api_server + 'v1/accounts';
     var accountsData = JSON.parse(UrlFetchApp.fetch(url, options).getContentText());
-    this.accounts = accountsData['accounts'];
+    this.accounts = accountsData.accounts;
 
     this.getPositions = function () {
         const options: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
             'method': 'get',
             'headers': this.authHeader
         };
-        var row = 1;
-        for (var i = 0; i < this.accounts.length; i++) {
-            var url = this.authData.api_server + 'v1/accounts/' + this.accounts[i]['number'] + '/positions';
-            row = writeJSONtoSheet(JSON.parse(UrlFetchApp.fetch(url, options).getContentText())['positions'], "Positions", this.accounts[i], row);
-        }
+        let table = {
+            rows: [],
+            namedRanges: [],
+        };
+        const sheetName = "Positions";
+        this.accounts.forEach(account => {
+            var url = this.authData.api_server + 'v1/accounts/' + account.number + '/positions';
+            table = writeJsonToTable(JSON.parse(UrlFetchApp.fetch(url, options).getContentText())['positions'], sheetName, table, account);
+        });
+        writeTableToSheet(sheetName, table);
+        writeNamedRangesToSheet(sheetName, table);
     }
 
     this.getBalances = function () {
@@ -79,65 +85,107 @@ var QuestradeApiSession = function () {
             'method': 'get',
             'headers': this.authHeader
         };
-        var row = 1;
-        for (var i = 0; i < this.accounts.length; i++) {
-            var url = this.authData.api_server + 'v1/accounts/' + this.accounts[i]['number'] + '/balances';
-            row = writeJSONtoSheet(JSON.parse(UrlFetchApp.fetch(url, options).getContentText())['perCurrencyBalances'], "Balances", this.accounts[i], row);
-        }
+        let table = {
+            rows: [],
+            namedRanges: [],
+        };
+        const sheetName = "Balances";
+        this.accounts.forEach(account => {
+            var url = this.authData.api_server + 'v1/accounts/' + account.number + '/balances';
+            table = writeJsonToTable(JSON.parse(UrlFetchApp.fetch(url, options).getContentText())['perCurrencyBalances'], sheetName, table, account);
+        });
+        writeTableToSheet(sheetName, table);
+        writeNamedRangesToSheet(sheetName, table);
     }
 }
 
-function writeJSONtoSheet(json, sheetname, account, currentRow) {
+function objectValues(obj) {
+    const keys = Object.keys(obj);
+    return keys.map(key => obj[key]);
+}
+
+function writeJsonToTable(json, sheetName, table, account) {
     var doc = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = doc.getSheetByName(sheetname);
-    var keys = Object.keys(json).sort();
+    var sheet = doc.getSheetByName(sheetName);
+
+    if (json === undefined || json.length == 0) {
+        return table;
+    }
+
+    const entries = json.sort();
+
+    // Get account row
+    table.rows.push(objectValues(account));
+
+    // Header for one object should be the same for all
+    const header = Object.keys(entries[0]);
+    table.rows.push(header);
+
+    // Get values of all entries in a 2D array
+    entries.forEach(entry => table.rows.push(objectValues(entry)));
+
+    // Insert empty row for spacing
+    table.rows.push([]);
+
+    const lastNamedRange = table.namedRanges[table.namedRanges.length - 1];
+    let startRow = 3;
+    let startCol = 1;
+    const numRows = entries.length;
+    const numCols = header.length;
+    if (lastNamedRange !== undefined && table.namedRanges.length > 0) {
+        // If a previous named range exists, start range at next section (new account)
+        startRow = startRow + lastNamedRange.startRow + lastNamedRange.numRows;
+    }
+
+    table.namedRanges.push({
+        name: account.type + "_" + account.number + "_" + sheetName,
+        startRow,
+        numRows,
+        range: sheet.getRange(startRow, startCol, numRows, numCols),
+    });
+
+    return table;
+}
+
+function writeTableToSheet(sheetName, table) {
+    var doc = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = doc.getSheetByName(sheetName);
 
     if (sheet == null) {
-        sheet = doc.insertSheet(sheetname);
+        sheet = doc.insertSheet(sheetName);
+    } else {
+        sheet.clear();
     }
 
-    if (keys.length < 1) {
-        console.error("Nothing to do, return");
-        return currentRow;
-    }
+    let maxColumnLength = 0;
+    table.rows.forEach(row => {
+        if (row.length > maxColumnLength) {
+            maxColumnLength = row.length;
+        }
+    });
 
-    var lastRow = sheet.getLastRow();
-    var lastCol = sheet.getLastColumn();
-    var header = [];
-    for (var k = 0; k < keys.length; k++) {
-        var header_keys = Object.keys(json[keys[k]]);
-        for (var h = 0; h < header_keys.length; h++) {
-            if (header.indexOf(header_keys[h]) === -1) {
-                header.push(header_keys[h]);
+    // Normalize all rows so they are the same length (required by setValues)
+    table.rows.forEach(row => {
+        const difference = maxColumnLength - row.length;
+        if (difference > 0) {
+            let i;
+            for (i = 0; i < difference; i++) {
+                row.push("");
             }
         }
-    }
-    if (currentRow == 1 && lastRow) {
-        sheet.getRange(1, 1, lastRow, lastCol).clear();
-    }
+    });
 
-    var rows = [];
-    for (var i = 0; i < keys.length; i++) {
-        var row = [];
-        for (var h = 0; h < header.length; h++) {
-            row.push(header[h] in json[keys[i]] ? json[keys[i]][header[h]] : "");
-        }
-        if (row.length > 0) {
-            rows.push(row);
-        }
-    }
-    sheet.getRange(currentRow, 1, 1, 2).setValues([[account['type'], account['number']]]);
-    currentRow++;
-    sheet.getRange(currentRow, 1, 1, header.length).setValues([header]);
-    currentRow++;
-    if (rows.length > 0) {
-        var range = sheet.getRange(currentRow, 1, keys.length, header.length);
-        range.setValues(rows);
-        doc.setNamedRange(account['type'] + "_" + account['number'] + "_" + sheetname, range);
-    }
-    currentRow += keys.length;
-    currentRow++;
-    return currentRow;
+    // Write table to sheet
+    var range = sheet.getRange(1, 1, table.rows.length, maxColumnLength);
+    range.setValues(table.rows);
+}
+
+function writeNamedRangesToSheet(sheetName, table) {
+    var doc = SpreadsheetApp.getActiveSpreadsheet();
+
+    table.namedRanges.forEach(namedRange =>
+        doc.setNamedRange(namedRange.name, namedRange.range)
+    )
 }
 
 function getPositionsAndBalances(qt) {
