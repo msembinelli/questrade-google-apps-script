@@ -80,7 +80,7 @@ var QuestradeApiSession = function () {
         writeNamedRangesToSheet(sheetName, table);
     }
 
-    this.getBalances = function () {
+    this.getBalances = function (method) {
         const options: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
             'method': 'get',
             'headers': this.authHeader
@@ -89,10 +89,10 @@ var QuestradeApiSession = function () {
             rows: [],
             namedRanges: [],
         };
-        const sheetName = "Balances";
+        const sheetName = method;
         this.accounts.forEach(account => {
             var url = this.authData.api_server + 'v1/accounts/' + account.number + '/balances';
-            table = writeJsonToTable(JSON.parse(UrlFetchApp.fetch(url, options).getContentText())['perCurrencyBalances'], sheetName, table, account);
+            table = writeJsonToTable(JSON.parse(UrlFetchApp.fetch(url, options).getContentText())[method], sheetName, table, account);
         });
         writeTableToSheet(sheetName, table);
         writeNamedRangesToSheet(sheetName, table);
@@ -107,6 +107,10 @@ function objectValues(obj) {
 function writeJsonToTable(json, sheetName, table, account) {
     var doc = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = doc.getSheetByName(sheetName);
+
+    if (sheet == null) {
+        sheet = doc.insertSheet(sheetName);
+    }
 
     if (json === undefined || json.length == 0) {
         return table;
@@ -151,11 +155,7 @@ function writeTableToSheet(sheetName, table) {
     var doc = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = doc.getSheetByName(sheetName);
 
-    if (sheet == null) {
-        sheet = doc.insertSheet(sheetName);
-    } else {
-        sheet.clear();
-    }
+    sheet.clear();
 
     let maxColumnLength = 0;
     table.rows.forEach(row => {
@@ -190,7 +190,8 @@ function writeNamedRangesToSheet(sheetName, table) {
 
 function getPositionsAndBalances(qt) {
     qt.getPositions();
-    qt.getBalances();
+    qt.getBalances('perCurrencyBalances');
+    qt.getBalances('combinedBalances');
     Logger.log("Wrote balances/positions!");
 }
 
@@ -209,7 +210,7 @@ function onOpen(e) {
     // Add a custom menu to the spreadsheet.
     SpreadsheetApp.getUi() // Or DocumentApp, SlidesApp, or FormApp.
         .createMenu('Questrade')
-        .addItem('Run', 'run')
+        .addItem('Pull', 'run')
         .addToUi();
 }
 
