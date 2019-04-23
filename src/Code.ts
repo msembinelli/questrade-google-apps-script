@@ -1,8 +1,9 @@
 function reset() {
-    var service = getService();
+    const service = getService();
     service.reset();
 }
 function getService() {
+    // @ts-ignore
     return OAuth2.createService('questrade')
         .setAuthorizationBaseUrl('https://login.questrade.com/oauth2/authorize')
         .setTokenUrl('https://login.questrade.com/oauth2/token')
@@ -26,8 +27,8 @@ function getService() {
         .setParam('response_type', 'code');
 }
 function authCallback(request) {
-    var service = getService();
-    var authorized = service.handleCallback(request);
+    const service = getService();
+    const authorized = service.handleCallback(request);
     if (authorized) {
         return HtmlService.createHtmlOutput('Success! <script>setTimeout(function() { top.window.close() }, 1);</script>');
     } else {
@@ -35,18 +36,19 @@ function authCallback(request) {
     }
 }
 function logRedirectUri() {
+    // @ts-ignore
     console.log(OAuth2.getRedirectUri());
 }
 var QuestradeApiSession = function () {
     this.service = getService();
-    if (!this.service.hasAccess())
-    {
-        var authorizationUrl = this.service.getAuthorizationUrl();
-        var template = HtmlService.createTemplate(
+    if (!this.service.hasAccess()) {
+        const authorizationUrl = this.service.getAuthorizationUrl();
+        const template: GoogleAppsScript.HTML.HtmlTemplate = HtmlService.createTemplate(
             '<a href="<?= authorizationUrl ?>" target="_blank">Authorize</a>. ' +
             'Pull again when the authorization is complete.');
+        // @ts-ignore
         template.authorizationUrl = authorizationUrl;
-        var page = template.evaluate();
+        const page = template.evaluate();
         SpreadsheetApp.getUi().showSidebar(page);
         return;
     }
@@ -58,8 +60,8 @@ var QuestradeApiSession = function () {
         'method': 'get',
         'headers': this.authHeader
     };
-    var url = this.apiServer + 'v1/accounts';
-    var accountsData = JSON.parse(UrlFetchApp.fetch(url, options).getContentText());
+    const url = this.apiServer + 'v1/accounts';
+    const accountsData = JSON.parse(UrlFetchApp.fetch(url, options).getContentText());
     this.accounts = accountsData.accounts;
 
     this.getPositions = function () {
@@ -73,7 +75,7 @@ var QuestradeApiSession = function () {
         };
         const sheetName = "Positions";
         this.accounts.forEach(account => {
-            var url = this.apiServer + 'v1/accounts/' + account.number + '/positions';
+            const url = this.apiServer + 'v1/accounts/' + account.number + '/positions';
             table = writeJsonToTable(JSON.parse(UrlFetchApp.fetch(url, options).getContentText())['positions'], sheetName, table, account);
         });
         writeTableToSheet(sheetName, table);
@@ -91,7 +93,7 @@ var QuestradeApiSession = function () {
         };
         const sheetName = method;
         this.accounts.forEach(account => {
-            var url = this.apiServer + 'v1/accounts/' + account.number + '/balances';
+            const url = this.apiServer + 'v1/accounts/' + account.number + '/balances';
             table = writeJsonToTable(JSON.parse(UrlFetchApp.fetch(url, options).getContentText())[method], sheetName, table, account);
         });
         writeTableToSheet(sheetName, table);
@@ -105,8 +107,8 @@ function objectValues(obj) {
 }
 
 function writeJsonToTable(json, sheetName, table, account) {
-    var doc = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = doc.getSheetByName(sheetName);
+    const doc = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = doc.getSheetByName(sheetName);
 
     if (sheet == null) {
         sheet = doc.insertSheet(sheetName);
@@ -152,8 +154,8 @@ function writeJsonToTable(json, sheetName, table, account) {
 }
 
 function writeTableToSheet(sheetName, table) {
-    var doc = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = doc.getSheetByName(sheetName);
+    const doc = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = doc.getSheetByName(sheetName);
 
     sheet.clear();
 
@@ -176,12 +178,12 @@ function writeTableToSheet(sheetName, table) {
     });
 
     // Write table to sheet
-    var range = sheet.getRange(1, 1, table.rows.length, maxColumnLength);
+    const range = sheet.getRange(1, 1, table.rows.length, maxColumnLength);
     range.setValues(table.rows);
 }
 
 function writeNamedRangesToSheet(sheetName, table) {
-    var doc = SpreadsheetApp.getActiveSpreadsheet();
+    const doc = SpreadsheetApp.getActiveSpreadsheet();
 
     table.namedRanges.forEach(namedRange =>
         doc.setNamedRange(namedRange.name, namedRange.range)
