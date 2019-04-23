@@ -20,6 +20,7 @@ In `.clasp.json` edit the script ID to contain the ID of your script created wit
 
 With the same script ID set the redirect address of your Questrade Personal Apps to:
 `https://script.google.com/macros/d/{SCRIPT ID}/usercallback`
+Make sure you click the '+' sign after entering for questrade to save the callback.
 
 Login to clasp:
 `clasp login` or `sudo clasp login`
@@ -30,8 +31,9 @@ Push to remote project:
 Open the project:
 `clasp open`
 
-Navigate to script properties (File > Project Properties > Script Properties) and add the following key value pair:
-`customerKey <QUESTRADE_PERSONAL_APP_CUSTOMER_KEY>`
+On your questrade personal app beside the app name, hit the dropdown arrow menu to view the consumer key.
+Navigate to script properties (File > Project Properties > Script Properties) and add your consumer key using the following key value pair:
+`consumerKey <QUESTRADE_PERSONAL_APP_CONSUMER_KEY>`
 
 A menu named Questrade will be added within a few seconds of opening the sheet. Select option `Pull` to get data from Questrade.
 If no valid credential is stored, a link to authorize the script will appear on the side. Once authorize use `Questrade->Pull` again.

@@ -9,7 +9,7 @@ function getService() {
         .setTokenUrl('https://login.questrade.com/oauth2/token')
 
         // Set the client ID.
-        .setClientId(PropertiesService.getScriptProperties().getProperty('customerKey'))
+        .setClientId(PropertiesService.getScriptProperties().getProperty('consumerKey'))
 
         // No secret provided by QT. Use dummy one to make oauth2 lib happy.
         .setClientSecret('secret')
