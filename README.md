@@ -33,14 +33,5 @@ Open the project:
 Navigate to script properties (File > Project Properties > Script Properties) and add the following key value pair:
 `customerKey <QUESTRADE_PERSONAL_APP_CUSTOMER_KEY>`
 
-Add [apps-script-oauth2](https://github.com/gsuitedevs/apps-script-oauth2) library:
-1. Click on the menu item "Resources > Libraries..."
-2. In the "Find a Library" text box, enter the script ID
-   `1B7FSrk5Zi6L1rSxxTDgDEUsPzlukDsi4KGuTMorsTQHhGBzBkMun4iDF` and click the
-   "Select" button.
-3. Choose a version in the dropdown box (usually best to pick the latest
-   version).
-4. Click the "Save" button.
-
-A menu named Questrade will be added within a few second when opening the sheet. Select option `Pull` to get data from Questrade.
+A menu named Questrade will be added within a few seconds of opening the sheet. Select option `Pull` to get data from Questrade.
 If no valid credential is stored, a link to authorize the script will appear on the side. Once authorize use `Questrade->Pull` again.
