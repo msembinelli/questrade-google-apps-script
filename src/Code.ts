@@ -1,64 +1,64 @@
-function authorization() {
-    var storedTokenData = {
-        refresh_token: ''
-    };
-    try {
-        storedTokenData = JSON.parse(PropertiesService.getUserProperties().getProperty('qt'));
-    } catch (e) {
-        getNewToken();
-        return undefined;
-    }
-    if (storedTokenData == null) {
-        getNewToken();
-        return undefined;
-    }
-
-    const options: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
-        'method': 'post',
-        'payload': {
-            'refresh_token': storedTokenData.refresh_token,
-            'grant_type': 'refresh_token',
-        }
-    };
-
-    const url = PropertiesService.getScriptProperties().getProperty('tokenUrl')
-    try {
-        var tokenObj = JSON.parse(UrlFetchApp.fetch(url, options).getContentText());
-    } catch (e) {
-        getNewToken();
-        return undefined;
-    }
-    PropertiesService.getUserProperties().setProperty('qt', JSON.stringify(tokenObj));
-    return tokenObj;
+function reset() {
+    var service = getService();
+    service.reset();
 }
+function getService() {
+    return OAuth2.createService('questrade')
+        .setAuthorizationBaseUrl('https://login.questrade.com/oauth2/authorize')
+        .setTokenUrl('https://login.questrade.com/oauth2/token')
 
-function getNewToken() {
-    var html = HtmlService.createHtmlOutputFromFile('EnterToken');
-    SpreadsheetApp.getUi().showModalDialog(html, 'Enter Questrade API Token');
+        // Set the client ID.
+        .setClientId(PropertiesService.getScriptProperties().getProperty('customerKey'))
+
+        // No secret provided by QT. Use dummy one to make oauth2 lib happy.
+        .setClientSecret('secret')
+
+        // Set the name of the callback function in the script referenced
+        // above that should be invoked to complete the OAuth flow.
+        .setCallbackFunction('authCallback')
+
+        // Set the property store where authorized tokens should be persisted.
+        .setPropertyStore(PropertiesService.getUserProperties())
+
+        // Set the scopes to request.
+        .setScope('read_acc')
+
+        .setParam('response_type', 'code');
 }
-
-function saveNewToken(refresh_token) {
-    var storeData = {
-        'refresh_token': refresh_token
+function authCallback(request) {
+    var service = getService();
+    var authorized = service.handleCallback(request);
+    if (authorized) {
+        return HtmlService.createHtmlOutput('Success! <script>setTimeout(function() { top.window.close() }, 1);</script>');
+    } else {
+        return HtmlService.createHtmlOutput('Denied.');
     }
-    PropertiesService.getUserProperties().setProperty('qt', JSON.stringify(storeData));
-    run();
 }
-
+function logRedirectUri() {
+    console.log(OAuth2.getRedirectUri());
+}
 var QuestradeApiSession = function () {
-    this.authData = authorization();
-    if (this.authData == undefined) {
+    this.service = getService();
+    if (!this.service.hasAccess())
+    {
+        var authorizationUrl = this.service.getAuthorizationUrl();
+        var template = HtmlService.createTemplate(
+            '<a href="<?= authorizationUrl ?>" target="_blank">Authorize</a>. ' +
+            'Pull again when the authorization is complete.');
+        template.authorizationUrl = authorizationUrl;
+        var page = template.evaluate();
+        SpreadsheetApp.getUi().showSidebar(page);
         return;
     }
     this.authHeader = {
-        'Authorization': 'Bearer ' + this.authData.access_token
+        'Authorization': 'Bearer ' + this.service.getAccessToken()
     };
-
+    this.apiServer = this.service.getToken().api_server;
     const options: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
         'method': 'get',
         'headers': this.authHeader
     };
-    var url = this.authData.api_server + 'v1/accounts';
+    var url = this.apiServer + 'v1/accounts';
     var accountsData = JSON.parse(UrlFetchApp.fetch(url, options).getContentText());
     this.accounts = accountsData.accounts;
 
@@ -73,7 +73,7 @@ var QuestradeApiSession = function () {
         };
         const sheetName = "Positions";
         this.accounts.forEach(account => {
-            var url = this.authData.api_server + 'v1/accounts/' + account.number + '/positions';
+            var url = this.apiServer + 'v1/accounts/' + account.number + '/positions';
             table = writeJsonToTable(JSON.parse(UrlFetchApp.fetch(url, options).getContentText())['positions'], sheetName, table, account);
         });
         writeTableToSheet(sheetName, table);
@@ -91,7 +91,7 @@ var QuestradeApiSession = function () {
         };
         const sheetName = method;
         this.accounts.forEach(account => {
-            var url = this.authData.api_server + 'v1/accounts/' + account.number + '/balances';
+            var url = this.apiServer + 'v1/accounts/' + account.number + '/balances';
             table = writeJsonToTable(JSON.parse(UrlFetchApp.fetch(url, options).getContentText())[method], sheetName, table, account);
         });
         writeTableToSheet(sheetName, table);

@@ -17,6 +17,10 @@ In `.clasp.json` edit the script ID to contain the ID of your script created wit
   "fileExtension": "ts"
 }
 ```
+
+With the same script ID set the redirect address of your Questrade Personal Apps to:
+`https://script.google.com/macros/d/{SCRIPT ID}/usercallback`
+
 Login to clasp:
 `clasp login` or `sudo clasp login`
 
@@ -27,8 +31,16 @@ Open the project:
 `clasp open`
 
 Navigate to script properties (File > Project Properties > Script Properties) and add the following key value pair:
-tokenUrl https://login.questrade.com/oauth2/token
+`customerKey <QUESTRADE_PERSONAL_APP_CUSTOMER_KEY>`
 
-Now attach the `run()` command to a button in google sheets or set the `run()` function to run when the sheet opens.
+Add [apps-script-oauth2](https://github.com/gsuitedevs/apps-script-oauth2) library:
+1. Click on the menu item "Resources > Libraries..."
+2. In the "Find a Library" text box, enter the script ID
+   `1B7FSrk5Zi6L1rSxxTDgDEUsPzlukDsi4KGuTMorsTQHhGBzBkMun4iDF` and click the
+   "Select" button.
+3. Choose a version in the dropdown box (usually best to pick the latest
+   version).
+4. Click the "Save" button.
 
-Upon the first run, you will get a prompt asking for your questrade refresh key. You will have to retreive this from your questrade account via the app hub.
+A menu named Questrade will be added within a few second when opening the sheet. Select option `Pull` to get data from Questrade.
+If no valid credential is stored, a link to authorize the script will appear on the side. Once authorize use `Questrade->Pull` again.
