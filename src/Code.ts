@@ -79,7 +79,7 @@ var QuestradeApiSession = function () {
             table = writeJsonToTable(JSON.parse(UrlFetchApp.fetch(url, options).getContentText())['positions'], sheetName, table, account);
         });
         writeTableToSheet(sheetName, table);
-        writeNamedRangesToSheet(sheetName, table);
+        writeNamedRangesToDocument(table);
     }
 
     this.getBalances = function (method) {
@@ -97,7 +97,7 @@ var QuestradeApiSession = function () {
             table = writeJsonToTable(JSON.parse(UrlFetchApp.fetch(url, options).getContentText())[method], sheetName, table, account);
         });
         writeTableToSheet(sheetName, table);
-        writeNamedRangesToSheet(sheetName, table);
+        writeNamedRangesToDocument(table);
     }
 }
 
@@ -182,7 +182,7 @@ function writeTableToSheet(sheetName, table) {
     range.setValues(table.rows);
 }
 
-function writeNamedRangesToSheet(sheetName, table) {
+function writeNamedRangesToDocument(table) {
     const doc = SpreadsheetApp.getActiveSpreadsheet();
 
     table.namedRanges.forEach(namedRange =>
